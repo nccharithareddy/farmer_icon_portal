@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Farmer Market Analytics</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f7f6;
+    }
+
+    header {
+      background: #2e7d32;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .price {
+      font-size: 36px;
+      color: green;
+      font-weight: bold;
+    }
+
+    select {
+      padding: 10px;
+      margin: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: green;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    canvas {
+      max-width: 100%;
+    }
+
+    .status {
+      font-size: 18px;
+      margin-top: 10px;
+    }
+
+    .good { color: green; }
+    .hold { color: red; }
+  </style>
+</head>
+<body>
+
+<header>
+  🌾 Farmer Market Price Portal
+</header>
+
+<div class="container">
+
+  <!-- Selectors -->
+  <div class="card">
+    <h3>Select Crop & Location</h3>
+
+    <select id="crop">
+      <option value="tomato">Tomato</option>
+      <option value="onion">Onion</option>
+      <option value="rice">Rice</option>
+    </select>
+
+    <select id="location">
+      <option value="bangalore">Bangalore</option>
+      <option value="mysore">Mysore</option>
+    </select>
+
+    <br/>
+    <button onclick="loadData()">Get Price</button>
+  </div>
+
+  <!-- Price Display -->
+  <div class="card">
+    <h2 id="cropName">Tomato</h2>
+    <div class="price" id="price">₹0</div>
+    <div>per quintal</div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <!-- Chart -->
+  <div class="card">
+    <h3>Price Trend</h3>
+    <canvas id="chart"></canvas>
+  </div>
+
+</div>
+
+<script>
+  let chart;
+
+  async function loadData() {
+    const crop = document.getElementById("crop").value;
+    const location = document.getElementById("location").value;
+
+    document.getElementById("cropName").innerText = crop.toUpperCase();
+
+    try {
+      const response = await fetch(`/api/prices?crop=${crop}&location=${location}`);
+      const data = await response.json();
+
+      const prices = data.prices;
+      const currentPrice = prices[prices.length - 1];
+
+      document.getElementById("price").innerText = "₹" + currentPrice;
+
+      const prevPrice = prices[prices.length - 2];
+      const status = document.getElementById("status");
+
+      if (currentPrice > prevPrice) {
+        status.innerText = "🟢 Good time to sell";
+        status.className = "status good";
+      } else {
+        status.innerText = "🔴 Hold stock";
+        status.className = "status hold";
+      }
+
+      renderChart(prices);
+
+    } catch (error) {
+      alert("Error fetching data from server");
+      console.error(error);
+    }
+  }
+
+  function renderChart(data) {
+    const ctx = document.getElementById("chart").getContext("2d");
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"],
+        datasets: [{
+          label: "Price Trend",
+          data: data,
+          borderColor: "green",
+          fill: false
+        }]
+      }
+    });
+  }
+
+  // Load default data
+  loadData();
+</script>
+
+</body>
+</html>
